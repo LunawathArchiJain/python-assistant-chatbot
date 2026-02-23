@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python Assistant Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Highlight.js -->
+    <link rel="stylesheet"
+     href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #252547);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 95%;
+            max-width: 750px;
+            height: 92vh;
+            background: #ffffff;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0px 12px 35px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #4f46e5;
+            color: white;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 14px;
+            line-height: 1.6;
+            font-size: 14px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background: #4f46e5;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .assistant {
+            background: #ffffff;
+            color: #111;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.08);
+            position: relative;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .chat-input button {
+            margin-left: 10px;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #4f46e5;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .chat-input button:hover {
+            background: #3730a3;
+        }
+
+        pre {
+            background: #1e1e2f;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        code {
+            font-family: Consolas, monospace;
+            font-size: 13px;
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #3730a3;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        Python Assistant Chatbot
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="chat-input">
+        <input type="text" id="messageInput"
+               placeholder="Ask a Python question..."
+               onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const chatBox = document.getElementById("chatBox");
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        // User message
+        const userMsg = document.createElement("div");
+        userMsg.className = "message user";
+        userMsg.textContent = message;
+        chatBox.appendChild(userMsg);
+
+        input.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Loading
+        const loadingMsg = document.createElement("div");
+        loadingMsg.className = "message assistant";
+        loadingMsg.textContent = "Typing...";
+        chatBox.appendChild(loadingMsg);
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+            chatBox.removeChild(loadingMsg);
+
+            const assistantMsg = document.createElement("div");
+            assistantMsg.className = "message assistant";
+            assistantMsg.innerHTML = marked.parse(data.response);
+            chatBox.appendChild(assistantMsg);
+
+            // Highlight code
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+
+                const button = document.createElement("button");
+                button.innerText = "Copy";
+                button.className = "copy-btn";
+
+                button.onclick = () => {
+                    navigator.clipboard.writeText(block.innerText);
+                    button.innerText = "Copied!";
+                    setTimeout(() => button.innerText = "Copy", 2000);
+                };
+
+                block.parentElement.appendChild(button);
+            });
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (error) {
+            loadingMsg.textContent = "Error connecting to server.";
+        }
+    }
+</script>
+
+</body>
+</html>
