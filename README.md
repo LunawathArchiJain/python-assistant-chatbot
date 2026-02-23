@@ -27,4 +27,4 @@ Built using:
 4. Open index.html
 
 ## Author
-Your Name
+Lunawath Archi
